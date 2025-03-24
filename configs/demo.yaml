@@ -1,0 +1,16 @@
+setup:
+  - "configure"
+  - "interface gi 1/0/3"
+
+teardown:
+  - "configure"
+
+loop: 10
+
+cmd_timeout: 10
+
+cmd:
+  - "shutdown"
+  - "no shutdown"
+
+

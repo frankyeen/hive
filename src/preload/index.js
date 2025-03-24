@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   // 发送消息到主进程
   send: (channel, data) => {
     // 白名单通道
-    const validChannels = ['connect', 'send-command']
+    const validChannels = ['connect', 'send-command', 'task-start', 'task-stop', 'task-path', 'task-name']
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
     }
@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   // 调用主进程方法并等待结果
   invoke: (channel, data) => {
     // 白名单通道
-    const validChannels = []
+    const validChannels = ['get-task-list', 'save-task', 'delete-task']
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, data)
     }
@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('api', {
   // 监听主进程发送的消息
   on: (channel, callback) => {
     // 白名单通道
-    const validChannels = ['data-receive', 'status-change', 'update-download-progress']
+    const validChannels = ['data-receive', 'status-change', 'update-download-progress', 'task-output', 'task-status', 'task-path', 'task-name']
     if (validChannels.includes(channel)) {
       // 移除所有现有监听器，防止重复
       ipcRenderer.removeAllListeners(channel)
@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   // 移除监听器
   removeListener: (channel) => {
-    const validChannels = ['data-receive']
+    const validChannels = ['data-receive', 'task-status', 'task-output', 'task-name', 'task-path']
     if (validChannels.includes(channel)) {
       ipcRenderer.removeAllListeners(channel)
     }

@@ -1,11 +1,19 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
+import '@xterm/xterm/css/xterm.css'
 
 // 任务状态数据
 const taskName = ref('未选择任务')
+const taskPath = ref('')
 const taskStatus = ref('未开始') // 状态：未开始、执行中、已完成、已停止
-const taskOutput = ref('')
 const isRunning = ref(false)
+
+// 终端相关变量
+const terminalElement = ref(null)
+let terminal = null
+let fitAddon = null
 
 // 开始任务
 const startTask = () => {
@@ -18,7 +26,10 @@ const startTask = () => {
   window.api.send('task-start', { name: taskName.value })
   
   // 这里可以添加模拟任务输出的逻辑
-  appendOutput('开始执行任务: ' + taskName.value + '\n')
+  appendOutput('开始执行任务: ' + taskName.value)
+  if (taskPath.value) {
+    appendOutput('任务路径: ' + taskPath.value)
+  }
 }
 
 // 停止任务
@@ -31,34 +42,55 @@ const stopTask = () => {
   // 发送停止任务的消息到主进程
   window.api.send('task-stop', { name: taskName.value })
   
-  appendOutput('任务已停止\n')
+  appendOutput('任务已停止')
 }
 
 // 清空输出
 const clearOutput = () => {
-  taskOutput.value = ''
+  if (terminal) {
+    terminal.clear()
+  }
 }
 
 // 添加输出内容
 const appendOutput = (text) => {
-  taskOutput.value += text
-  // 自动滚动到底部
-  if (outputElement.value) {
-    setTimeout(() => {
-      // 获取textarea内部元素并滚动到底部
-      const textareaInner = outputElement.value.$el.querySelector('.t-textarea__inner')
-      if (textareaInner) {
-        textareaInner.scrollTop = textareaInner.scrollHeight
-      }
-    }, 0)
+  if (terminal) {
+    terminal.writeln(text)
   }
 }
 
-// 输出框DOM引用
-const outputElement = ref(null)
+// 初始化终端
+const initTerminal = () => {
+  if (!terminalElement.value) return
+  
+  // 初始化终端
+  terminal = new Terminal({
+    cursorBlink: true,
+    fontSize: 14,
+    fontFamily: 'monospace',
+    scrollback: 1000,
+    theme: {
+      background: '#1e1e1e',
+      foreground: '#f0f0f0'
+    }
+  })
+
+  // 添加自适应插件
+  fitAddon = new FitAddon()
+  terminal.loadAddon(fitAddon)
+
+  // 打开终端并挂载到DOM元素
+  terminal.open(terminalElement.value)
+  fitAddon.fit()
+}
 
 // 监听任务状态变化
 onMounted(() => {
+  // 初始化终端
+  initTerminal()
+  
+  // 处理窗口大小变化
+  window.addEventListener('resize', handleResize)
   // 监听任务输出
   window.api.on('task-output', (data) => {
     appendOutput(data.text + '\n')
@@ -66,17 +98,27 @@ onMounted(() => {
   
   // 监听任务状态变化
   window.api.on('task-status', (data) => {
+    console.log(data)
     taskStatus.value = data.status
     isRunning.value = data.status === '执行中'
     
     if (data.status === '已完成') {
-      appendOutput('任务已完成\n')
+      appendOutput('任务已完成')
     }
   })
   
   // 监听任务名称变化
   window.api.on('task-name', (data) => {
     taskName.value = data.name || '未选择任务'
+  })
+  
+  // 监听任务路径变化
+  window.api.on('task-path', (data) => {
+    taskPath.value = data.path || ''
+  })
+
+  window.api.on('task-output', (data) => {
+    appendOutput(data.text)
   })
 })
 
@@ -85,7 +127,23 @@ onUnmounted(() => {
   window.api.removeListener('task-output')
   window.api.removeListener('task-status')
   window.api.removeListener('task-name')
+  window.api.removeListener('task-path')
+  
+  // 移除窗口大小变化监听
+  window.removeEventListener('resize', handleResize)
+  
+  // 销毁终端实例
+  if (terminal) {
+    terminal.dispose()
+  }
 })
+
+// 处理窗口大小变化
+const handleResize = () => {
+  if (fitAddon) {
+    fitAddon.fit()
+  }
+}
 
 // 根据状态返回对应的标签主题
 const getStatusTheme = (status) => {
@@ -114,7 +172,7 @@ const getStatusTheme = (status) => {
             <template #icon>
               <t-icon name="play-circle" v-if="taskStatus === '执行中'" />
               <t-icon name="check-circle" v-else-if="taskStatus === '已完成'" />
-              <t-icon name="stop-circle-1" v-else-if="taskStatus === '已停止'" />
+              <t-icon name="stop-circle" v-else-if="taskStatus === '已停止'" />
               <t-icon name="time" v-else />
             </template>
             {{ taskStatus }}
@@ -148,13 +206,7 @@ const getStatusTheme = (status) => {
       </div>
     </div>
     
-    <t-textarea
-      class="task-output"
-      ref="outputElement"
-      v-model="taskOutput"
-      readonly
-      :autosize="{ minRows: 5 }"
-    ></t-textarea>
+    <div class="task-output" ref="terminalElement"></div>
   </div>
 </template>
 
@@ -167,7 +219,7 @@ const getStatusTheme = (status) => {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  height: 180px; /* 减小固定高度 */
+  height: 220px; /* 增加固定高度以适应更大的窗口 */
   box-sizing: border-box;
 }
 
@@ -193,25 +245,9 @@ const getStatusTheme = (status) => {
 .task-output {
   flex: 1;
   background-color: #1e1e1e;
-  color: #f0f0f0;
   border-radius: 3px;
-  padding: 6px;
-  font-family: monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.5;
-}
-
-/* 覆盖TDesign文本区域的默认样式 */
-.task-output :deep(.t-textarea__inner) {
-  background-color: #1e1e1e;
-  color: #f0f0f0;
-  border: none;
-  resize: none;
-}
-
-.task-output :deep(.t-textarea__inner:focus) {
-  box-shadow: none;
+  padding: 8px;
+  overflow: auto; /* 修改为auto，只在内容超出时显示滚动条 */
+  font-size: 14px;
 }
 </style>
