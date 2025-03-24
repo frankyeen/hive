@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 
 // 安全地暴露主进程的API给渲染进程
 contextBridge.exposeInMainWorld('api', {
@@ -23,7 +22,7 @@ contextBridge.exposeInMainWorld('api', {
   // 监听主进程发送的消息
   on: (channel, callback) => {
     // 白名单通道
-    const validChannels = ['data-receive', 'status-change']
+    const validChannels = ['data-receive', 'status-change', 'update-download-progress']
     if (validChannels.includes(channel)) {
       // 移除所有现有监听器，防止重复
       ipcRenderer.removeAllListeners(channel)

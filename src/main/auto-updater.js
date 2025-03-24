@@ -1,4 +1,4 @@
-import { app, dialog } from 'electron'
+import { app, dialog, BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
 // 配置日志
@@ -45,6 +45,17 @@ autoUpdater.on('download-progress', (progressObj) => {
   logMessage = `${logMessage} - 已下载 ${progressObj.percent}%`
   logMessage = `${logMessage} (${progressObj.transferred}/${progressObj.total})`
   console.log(logMessage)
+  
+  // 向渲染进程发送下载进度信息
+  const mainWindow = BrowserWindow.getFocusedWindow()
+  if (mainWindow) {
+    mainWindow.webContents.send('update-download-progress', {
+      percent: progressObj.percent,
+      bytesPerSecond: progressObj.bytesPerSecond,
+      transferred: progressObj.transferred,
+      total: progressObj.total
+    })
+  }
 })
 
 // 更新下载完成

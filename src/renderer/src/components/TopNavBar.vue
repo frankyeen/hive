@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import StatusBar from './StatusBar.vue'
 import pkg from '../../../../package.json'
 
@@ -17,6 +17,13 @@ const password = ref('bnm789789')
 // 应用版本信息
 const appVersion = ref(pkg.version) // 从package.json中获取的版本号
 const isCheckingUpdate = ref(false) // 是否正在检查更新
+
+// 更新下载进度相关
+const isDownloading = ref(false) // 是否正在下载更新
+const downloadProgress = ref(0) // 下载进度百分比
+const downloadSpeed = ref(0) // 下载速度
+const downloadTransferred = ref(0) // 已下载大小
+const downloadTotal = ref(0) // 总大小
 
 // 打开/关闭弹出框的方法
 const toggleCreateSession = () => {
@@ -58,6 +65,31 @@ const checkForUpdates = () => {
     isCheckingUpdate.value = false
   }, 3000)
 }
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]
+}
+
+// 格式化下载速度
+const formatSpeed = (bytesPerSecond) => {
+  return formatFileSize(bytesPerSecond) + '/s'
+}
+
+// 监听下载进度
+onMounted(() => {
+  window.api.on('update-download-progress', (progressData) => {
+    isDownloading.value = true
+    downloadProgress.value = progressData.percent
+    downloadSpeed.value = progressData.bytesPerSecond
+    downloadTransferred.value = progressData.transferred
+    downloadTotal.value = progressData.total
+  })
+})
 </script>
 
 <template>
@@ -134,9 +166,6 @@ const checkForUpdates = () => {
       :on-cancel="toggleHelp"
     >
       <div class="help-content">
-        <h3>关于 Hive</h3>
-        <p>Hive 是一个基于 Electron 和 Vue 的网络设备管理工具。</p>
-        
         <div class="version-info">
           <p><strong>当前版本：</strong> v{{ appVersion }}</p>
           <t-button :loading="isCheckingUpdate" @click="checkForUpdates">
@@ -144,10 +173,15 @@ const checkForUpdates = () => {
           </t-button>
         </div>
         
-        <h3>使用说明</h3>
-        <p>1. 点击"创建会话"按钮连接到网络设备</p>
-        <p>2. 在终端中输入命令进行操作</p>
-        <p>3. 使用任务管理功能批量执行命令</p>
+        <!-- 更新下载进度显示区域 -->
+        <div v-if="isDownloading" class="download-progress-container">
+          <h3>正在下载更新</h3>
+          <t-progress :percentage="downloadProgress" :color="{ from: '#0052D9', to: '#00A870' }" :label="true" />
+          <div class="download-details">
+            <p>下载速度: {{ formatSpeed(downloadSpeed) }}</p>
+            <p>已下载: {{ formatFileSize(downloadTransferred) }} / {{ formatFileSize(downloadTotal) }}</p>
+          </div>
+        </div>
       </div>
     </t-dialog>
   </div>
@@ -199,5 +233,27 @@ const checkForUpdates = () => {
   padding: 10px;
   border-radius: 4px;
   margin: 15px 0;
+}
+
+.download-progress-container {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f0f9ff;
+  border-radius: 6px;
+  border: 1px solid #e0f0ff;
+}
+
+.download-progress-container h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #0052d9;
+}
+
+.download-details {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
 }
 </style>
