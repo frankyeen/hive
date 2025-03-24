@@ -39,7 +39,7 @@ const getConnectionTheme = (status) => {
         </template>
         {{ connectionStatus }}
       </t-tag>
-      
+
       <t-tag theme="default" size="small">
         <template #icon>
           <t-icon name="internet" />

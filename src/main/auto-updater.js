@@ -15,18 +15,20 @@ autoUpdater.on('error', (error) => {
 
 // 检查到新版本
 autoUpdater.on('update-available', (info) => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: '发现新版本',
-    message: `发现新版本: ${info.version}`,
-    detail: '是否现在下载更新？',
-    buttons: ['是', '否'],
-    cancelId: 1
-  }).then(({ response }) => {
-    if (response === 0) {
-      autoUpdater.downloadUpdate()
-    }
-  })
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: '发现新版本',
+      message: `发现新版本: ${info.version}`,
+      detail: '是否现在下载更新？',
+      buttons: ['是', '否'],
+      cancelId: 1
+    })
+    .then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.downloadUpdate()
+      }
+    })
 })
 
 // 没有新版本
@@ -47,13 +49,15 @@ autoUpdater.on('download-progress', (progressObj) => {
 
 // 更新下载完成
 autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-    title: '安装更新',
-    message: '更新下载完毕，应用将重启并安装'
-  }).then(() => {
-    // 退出并安装更新
-    autoUpdater.quitAndInstall()
-  })
+  dialog
+    .showMessageBox({
+      title: '安装更新',
+      message: '更新下载完毕，应用将重启并安装'
+    })
+    .then(() => {
+      // 退出并安装更新
+      autoUpdater.quitAndInstall()
+    })
 })
 
 // 导出检查更新函数
@@ -65,12 +69,6 @@ export function checkForUpdates() {
 export function setupAutoUpdater() {
   // 等待应用准备就绪
   app.whenReady().then(() => {
-    // 开发环境下可以通过设置环境变量来测试更新
-    if (process.env.NODE_ENV === 'development') {
-      // 设置更新服务器为开发环境
-      autoUpdater.updateConfigPath = 'dev-app-update.yml'
-    }
-    
     // 延迟检查更新，确保应用已完全启动
     setTimeout(() => {
       autoUpdater.checkForUpdates()

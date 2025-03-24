@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import StatusBar from './StatusBar.vue'
+import pkg from '../../../../package.json'
 
 // 控制各个弹出框的显示状态
 const createSessionVisible = ref(false)
@@ -12,6 +13,10 @@ const host = ref('192.168.5.58')
 const port = ref('23')
 const username = ref('admin')
 const password = ref('bnm789789')
+
+// 应用版本信息
+const appVersion = ref(pkg.version) // 从package.json中获取的版本号
+const isCheckingUpdate = ref(false) // 是否正在检查更新
 
 // 打开/关闭弹出框的方法
 const toggleCreateSession = () => {
@@ -34,13 +39,24 @@ const connect = () => {
     username: username.value,
     password: password.value
   })
-  
+
   // 添加URL参数，用于在StatusBar中获取当前连接的IP
   const url = new URL(window.location.href)
   url.searchParams.set('ip', host.value)
   window.history.replaceState({}, '', url)
-  
+
   createSessionVisible.value = false
+}
+
+// 检查更新方法
+const checkForUpdates = () => {
+  isCheckingUpdate.value = true
+  // 调用预加载脚本中暴露的检查更新方法
+  window.ipcRenderer.checkForUpdates()
+  // 设置一个定时器，3秒后重置检查状态
+  setTimeout(() => {
+    isCheckingUpdate.value = false
+  }, 3000)
 }
 </script>
 
@@ -69,13 +85,13 @@ const connect = () => {
       </t-space>
     </div>
     <div class="nav-right">
-      <StatusBar />  
+      <StatusBar />
     </div>
 
     <!-- 创建会话弹出框 -->
     <t-dialog
-      header="创建会话"
       v-model:visible="createSessionVisible"
+      header="创建会话"
       :on-close="toggleCreateSession"
       :on-confirm="connect"
       :on-cancel="toggleCreateSession"
@@ -99,30 +115,40 @@ const connect = () => {
 
     <!-- 任务管理弹出框 -->
     <t-dialog
-      header="任务管理"
       v-model:visible="taskManagerVisible"
+      header="任务管理"
       :on-close="toggleTaskManager"
       :on-confirm="toggleTaskManager"
       :on-cancel="toggleTaskManager"
     >
-      <template>
-        <p>任务管理的内容区域</p>
-        <!-- 这里将来可以添加任务管理的具体内容 -->
-      </template>
+      <p>任务管理的内容区域</p>
+      <!-- 这里将来可以添加任务管理的具体内容 -->
     </t-dialog>
 
     <!-- 帮助弹出框 -->
     <t-dialog
-      header="帮助"
       v-model:visible="helpVisible"
+      header="帮助"
       :on-close="toggleHelp"
       :on-confirm="toggleHelp"
       :on-cancel="toggleHelp"
     >
-      <template>
-        <p>帮助的内容区域</p>
-        <!-- 这里将来可以添加帮助的具体内容 -->
-      </template>
+      <div class="help-content">
+        <h3>关于 Hive</h3>
+        <p>Hive 是一个基于 Electron 和 Vue 的网络设备管理工具。</p>
+        
+        <div class="version-info">
+          <p><strong>当前版本：</strong> v{{ appVersion }}</p>
+          <t-button :loading="isCheckingUpdate" @click="checkForUpdates">
+            {{ isCheckingUpdate ? '检查中...' : '检查更新' }}
+          </t-button>
+        </div>
+        
+        <h3>使用说明</h3>
+        <p>1. 点击"创建会话"按钮连接到网络设备</p>
+        <p>2. 在终端中输入命令进行操作</p>
+        <p>3. 使用任务管理功能批量执行命令</p>
+      </div>
     </t-dialog>
   </div>
 </template>
@@ -153,5 +179,25 @@ const connect = () => {
 :deep(.t-dialog__body) {
   max-height: 70vh;
   overflow: auto;
+}
+
+.help-content {
+  padding: 10px;
+}
+
+.help-content h3 {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  color: #0052d9;
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 15px 0;
 }
 </style>
