@@ -11,6 +11,16 @@ cmd_timeout: 10
 
 cmd:
   - "shutdown"
+  - "@sleep 5"
   - "no shutdown"
 
+# 不期望回显
+unexpected:
+  - "%Invalid"
+  - "%Error"
+  - "%Wrong"
+  - "%Refuse"
+  - "%Conflict"
+  - "%Failed"
+  - "(psh)"  # 网管挂了
 

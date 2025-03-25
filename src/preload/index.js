@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   // 调用主进程方法并等待结果
   invoke: (channel, data) => {
     // 白名单通道
-    const validChannels = ['get-task-list', 'save-task', 'delete-task']
+    const validChannels = ['get-task-list', 'save-task', 'delete-task', 'get-log-list', 'open-log-file']
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, data)
     }

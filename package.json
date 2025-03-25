@@ -24,6 +24,8 @@
     "@xterm/xterm": "^5.5.0",
     "electron-log": "^5.3.2",
     "electron-updater": "^6.3.9",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
     "tdesign-icons-vue-next": "^0.3.4",
     "tdesign-vue-next": "^1.11.4",
     "telnet-client": "^2.2.5",

@@ -2,13 +2,19 @@
 import Terminal from './components/Terminal.vue'
 import TopNavBar from './components/TopNavBar.vue'
 import TaskExecutor from './components/TaskExecutor.vue'
+import LogViewer from './components/LogViewer.vue'
 </script>
 
 <template>
   <div class="container">
     <TopNavBar />
-    <Terminal />
-    <TaskExecutor />
+    <div class="main-content">
+      <div class="left-panel">
+        <Terminal />
+        <TaskExecutor />
+      </div>
+      <LogViewer />
+    </div>
   </div>
 </template>
 
@@ -22,5 +28,18 @@ import TaskExecutor from './components/TaskExecutor.vue'
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 </style>

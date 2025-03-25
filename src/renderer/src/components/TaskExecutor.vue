@@ -10,6 +10,15 @@ const taskPath = ref('')
 const taskStatus = ref('未开始') // 状态：未开始、执行中、已完成、已停止
 const isRunning = ref(false)
 
+// 自动上传相关状态
+const autoUpload = ref(false)
+const svnDialogVisible = ref(false)
+const svnInfo = ref({
+  url: '',
+  username: '',
+  password: ''
+})
+
 // 终端相关变量
 const terminalElement = ref(null)
 let terminal = null
@@ -22,14 +31,12 @@ const startTask = () => {
   isRunning.value = true
   taskStatus.value = '执行中'
   
-  // 发送开始任务的消息到主进程
-  window.api.send('task-start', { name: taskName.value })
-  
-  // 这里可以添加模拟任务输出的逻辑
-  appendOutput('开始执行任务: ' + taskName.value)
-  if (taskPath.value) {
-    appendOutput('任务路径: ' + taskPath.value)
-  }
+  // 发送开始任务的消息到主进程，包含自动上传信息
+  window.api.send('task-start', { 
+    name: taskName.value,
+    autoUpload: autoUpload.value,
+    svnInfo: autoUpload.value ? svnInfo.value : null
+  })
 }
 
 // 停止任务
@@ -39,8 +46,12 @@ const stopTask = () => {
   isRunning.value = false
   taskStatus.value = '已停止'
   
-  // 发送停止任务的消息到主进程
-  window.api.send('task-stop', { name: taskName.value })
+  // 发送停止任务的消息到主进程，包含自动上传信息
+  window.api.send('task-stop', { 
+    name: taskName.value,
+    autoUpload: autoUpload.value,
+    svnInfo: autoUpload.value ? svnInfo.value : null
+  })
   
   appendOutput('任务已停止')
 }
@@ -93,18 +104,13 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
   // 监听任务输出
   window.api.on('task-output', (data) => {
-    appendOutput(data.text + '\n')
+    appendOutput(data)
   })
   
   // 监听任务状态变化
   window.api.on('task-status', (data) => {
-    console.log(data)
     taskStatus.value = data.status
     isRunning.value = data.status === '执行中'
-    
-    if (data.status === '已完成') {
-      appendOutput('任务已完成')
-    }
   })
   
   // 监听任务名称变化
@@ -115,10 +121,7 @@ onMounted(() => {
   // 监听任务路径变化
   window.api.on('task-path', (data) => {
     taskPath.value = data.path || ''
-  })
-
-  window.api.on('task-output', (data) => {
-    appendOutput(data.text)
+    appendOutput(`选中任务路径: ${data.path}`)
   })
 })
 
@@ -154,6 +157,39 @@ const getStatusTheme = (status) => {
     default: return 'default'
   }
 }
+
+// 切换自动上传状态
+const toggleAutoUpload = () => {
+  if (!autoUpload.value) {
+    // 从关闭切换到开启时，显示SVN信息对话框
+    svnDialogVisible.value = true
+  } else {
+    // 从开启切换到关闭时，直接关闭
+    autoUpload.value = false
+  }
+}
+
+// 确认SVN信息
+const confirmSvnInfo = () => {
+  // 验证SVN信息
+  if (!svnInfo.value.url || !svnInfo.value.username || !svnInfo.value.password) {
+    // 如果信息不完整，显示错误提示
+    return
+  }
+  
+  // 设置自动上传为开启状态
+  autoUpload.value = true
+  // 关闭对话框
+  svnDialogVisible.value = false
+}
+
+// 取消SVN信息输入
+const cancelSvnInfo = () => {
+  // 关闭对话框
+  svnDialogVisible.value = false
+  // 保持自动上传为关闭状态
+  autoUpload.value = false
+}
 </script>
 
 <template>
@@ -182,6 +218,18 @@ const getStatusTheme = (status) => {
       
       <div class="task-controls">
         <t-space>
+          <t-switch
+            :value="autoUpload"
+            @change="toggleAutoUpload"
+            size="medium"
+            
+          >
+            <template #label>
+              <t-icon name="upload" />
+              自动上传
+            </template>
+          </t-switch>
+          
           <t-button theme="primary" :disabled="isRunning" @click="startTask">
             <template #icon>
               <t-icon name="play" />
@@ -207,6 +255,55 @@ const getStatusTheme = (status) => {
     </div>
     
     <div class="task-output" ref="terminalElement"></div>
+    
+    <!-- SVN信息对话框 -->
+    <t-dialog
+      header="SVN上传设置"
+      :visible.sync="svnDialogVisible"
+      :on-confirm="confirmSvnInfo"
+      :on-close="cancelSvnInfo"
+      width="600"
+    >
+      <t-form :label-width="100" layout="inline">
+        <t-form-item
+          label="SVN路径"
+          required
+          :label-width="100"
+          class="form-item"
+        >
+          <t-input
+            v-model="svnInfo.url"
+            placeholder="请输入SVN仓库路径"
+            style="max-width: 400px;"
+          />
+        </t-form-item>
+        <t-form-item
+          label="用户名"
+          required
+          :label-width="100"
+          class="form-item"
+        >
+          <t-input
+            v-model="svnInfo.username"
+            placeholder="请输入SVN用户名"
+            style="max-width: 400px;"
+          />
+        </t-form-item>
+        <t-form-item
+          label="密码"
+          required
+          :label-width="100"
+          class="form-item"
+        >
+          <t-input
+            v-model="svnInfo.password"
+            type="password"
+            placeholder="请输入SVN密码"
+            style="max-width: 400px;"
+          />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
   </div>
 </template>
 
@@ -216,11 +313,20 @@ const getStatusTheme = (status) => {
   background-color: #f8f8f8;
   border-radius: 6px;
   margin: 0 8px 8px 8px;
-  padding: 8px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  height: 220px; /* 增加固定高度以适应更大的窗口 */
+  height: 220px;
   box-sizing: border-box;
+}
+
+.form-item {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.form-item .t-input {
+  margin-left: 12px;
 }
 
 .task-header {
@@ -230,6 +336,7 @@ const getStatusTheme = (status) => {
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e7e7e7;
+  height: 40px; /* 固定高度保证垂直居中 */
 }
 
 .task-info {
@@ -240,6 +347,7 @@ const getStatusTheme = (status) => {
 .task-controls {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .task-output {

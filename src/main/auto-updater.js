@@ -80,9 +80,9 @@ export function checkForUpdates() {
 export function setupAutoUpdater() {
   // 等待应用准备就绪
   app.whenReady().then(() => {
-    // 延迟检查更新，确保应用已完全启动
-    setTimeout(() => {
-      autoUpdater.checkForUpdates()
-    }, 3000)
+    // 禁用自动更新检查
+    // setTimeout(() => {
+    //   autoUpdater.checkForUpdates()
+    // }, 3000)
   })
 }
