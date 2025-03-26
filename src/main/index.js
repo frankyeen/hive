@@ -1,7 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 import { Telnet } from 'telnet-client'
 import { setupAutoUpdater, checkForUpdates } from './auto-updater'
 import YAML from 'yaml'
@@ -38,7 +37,9 @@ function createWindow() {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon: path.join(__dirname, '../../resources/icon.png') } : 
+  process.platform === 'darwin' ? { icon: path.join(__dirname, '../../resources/icon.icns') } : 
+  process.platform === 'win32' ? { icon: path.join(__dirname, '../../resources/icon.ico') } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -143,7 +144,7 @@ ipcMain.on('connect', async (event, { host, port, username, password }) => {
       await connection.connect({
         host,
         port,
-        shellPrompt: /#/,
+        shellPrompt: "#|\(Y/N\)|>",
         timeout: 5000,
         execTimeout: 5000,
         loginPrompt: null,
@@ -159,7 +160,7 @@ ipcMain.on('connect', async (event, { host, port, username, password }) => {
       await connection.connect({
         host,
         port,
-        shellPrompt: /#/,
+        shellPrompt: "#|\(Y/N\)|>",
         timeout: 5000,
         execTimeout: 5000,
         loginPrompt: /Username:/i,
@@ -177,7 +178,7 @@ ipcMain.on('connect', async (event, { host, port, username, password }) => {
     event.reply('data-receive', `\r\n${response}`)
     event.reply('task-output', `连接成功!`)
     // 向状态栏发送连接成功状态
-    event.reply('status-change', { status: '已连接', ip: host })
+    event.reply('status-change', { status: '已连接', ip: host, port: port })
   } catch (error) {
     console.error('Connection error:', error)
     // 连接失败时发送错误消息
@@ -265,7 +266,7 @@ ipcMain.on('task-start', async (event, data) => {
   // 保存自动上传设置
   if (data && typeof data === 'object') {
     autoUploadEnabled = data.autoUpload || false;
-    svnInfo = data.svnInfo || null;
+    svnInfo = data.svnInfo ? JSON.parse(data.svnInfo) : null;
   }
   let stream = null;
   let logger = null;
@@ -330,6 +331,27 @@ ipcMain.on('task-start', async (event, data) => {
         for (const eachCmd of data.cmd) {
           const response = await executeCommand(eachCmd, logger, event);
           
+          if (response == 'response not received') {
+            const errorMessage = `检测到意外情况: response not received`;
+            logger.error(errorMessage);
+            event.reply('task-output', errorMessage);
+            event.reply('task-status', { status: '已停止' });
+            logger.info('任务因意外情况停止');
+            
+            // 如果启用了自动上传，执行SVN上传
+            if (autoUploadEnabled && svnInfo && logFilePath) {
+              try {
+                event.reply('task-output', '开始自动上传日志文件到SVN...');
+                await uploadLogToSvn(logFilePath, svnInfo, logger, event);
+              } catch (uploadError) {
+                const errorMsg = `SVN上传失败: ${uploadError.message}`;
+                logger.error(errorMsg);
+                event.reply('task-output', errorMsg);
+              }
+            }
+            return;
+          }
+          
           // 检查是否有意外情况
           if (data.unexpected && Array.isArray(data.unexpected)) {
             const unexpected = data.unexpected.find(element => response.includes(element));
@@ -339,6 +361,18 @@ ipcMain.on('task-start', async (event, data) => {
               event.reply('task-output', errorMessage);
               event.reply('task-status', { status: '已停止' });
               logger.info('任务因意外情况停止');
+
+              // 如果启用了自动上传，执行SVN上传
+              if (autoUploadEnabled && svnInfo && logFilePath) {
+                try {
+                  event.reply('task-output', '开始自动上传日志文件到SVN...');
+                  await uploadLogToSvn(logFilePath, svnInfo, logger, event);
+                } catch (uploadError) {
+                  const errorMsg = `SVN上传失败: ${uploadError.message}`;
+                  logger.error(errorMsg);
+                  event.reply('task-output', errorMsg);
+                }
+              }
               return;
             }
           }
@@ -549,17 +583,27 @@ ipcMain.handle('open-log-file', async (_, filePath) => {
   }
 })
 
+
+ipcMain.on('open-config-dir', () => {
+  shell.openPath(getConfigsDir())
+})
+
+ipcMain.on('open-logs-dir', () => {
+  shell.openPath(logsDir())
+})
+
 /**
  * 上传日志文件到SVN
  */
 async function uploadLogToSvn(logFilePath, svnInfo, logger, event) {
+  console.log(logFilePath)
+  console.log(svnInfo)
   const execPromise = promisify(exec);
-  const { url, username, password } = svnInfo;
-  const logFileName = path.basename(logFilePath);
-
-  if (!url || !username || !password) {
+  if (!svnInfo || !svnInfo.url || !svnInfo.username || !svnInfo.password) {
     throw new Error('SVN信息不完整');
   }
+  const { url, username, password } = svnInfo;
+  const logFileName = path.basename(logFilePath);
 
   try {
     // 验证SVN路径格式
@@ -567,17 +611,10 @@ async function uploadLogToSvn(logFilePath, svnInfo, logger, event) {
       throw new Error('SVN路径必须使用HTTP协议');
     }
 
-    // 自动创建父目录
-    const parentDir = path.dirname(url);
-    const mkdirCmd = `svn mkdir ${parentDir} --parents -m "自动创建目录" --username ${username} --password ${password} --non-interactive --trust-server-cert`;
-    await execPromise(mkdirCmd);
-
     // 直接使用import命令上传文件
-    const importCmd = `svn import ${logFilePath} ${url}/${logFileName} -m "自动上传日志文件" --username ${username} --password ${password} --non-interactive --trust-server-cert`;
-    
-    logger.info('开始直接上传日志文件到SVN');
-    event.reply('task-output', '正在直接上传文件到SVN...');
-    
+    const importCmd = `svn import ${logFilePath} ${url}/${username}/${logFileName} -m "自动上传日志文件${logFileName}" --username ${username} --password "${password}" --non-interactive --trust-server-cert`;
+    logger.info(`开始直接上传日志文件到${url}/${username}/${logFileName}`);
+    event.reply('task-output', `开始直接上传日志文件到${url}/${username}/${logFileName}`);
     const { stdout } = await execPromise(importCmd);
     
     logger.info(`SVN上传成功: ${stdout}`);

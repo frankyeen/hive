@@ -4,6 +4,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 // 状态数据
 const connectionStatus = ref('未连接') // 连接状态：已连接、未连接
 const sessionIP = ref('0.0.0.0') // 会话IP地址
+const sessionPort = ref('0') // 会话IP地址
 
 // 监听连接状态变化
 onMounted(() => {
@@ -12,9 +13,11 @@ onMounted(() => {
     if (data.status === '已连接') {
       connectionStatus.value = '已连接'
       sessionIP.value = data.ip || ''
+      sessionPort.value = data.port || ''
     } else if (data.status === '未连接') {
       connectionStatus.value = '未连接'
-      sessionIP.value = ''
+      sessionIP.value = '0.0.0.0'
+      sessionPort.value = '0'
     }
   })
 })
@@ -44,7 +47,7 @@ const getConnectionTheme = (status) => {
         <template #icon>
           <t-icon name="internet" />
         </template>
-        {{ sessionIP }}
+        {{ `${sessionIP}:${sessionPort}` }}
       </t-tag>
     </t-space>
   </div>

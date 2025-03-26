@@ -32,11 +32,15 @@ const startTask = () => {
   taskStatus.value = '执行中'
   
   // 发送开始任务的消息到主进程，包含自动上传信息
-  window.api.send('task-start', { 
-    name: taskName.value,
-    autoUpload: autoUpload.value,
-    svnInfo: autoUpload.value ? svnInfo.value : null
-  })
+  const message = { 
+  name: taskName.value,
+  autoUpload: autoUpload.value
+  }
+  if (autoUpload.value) {
+    // Stringify SVN info to avoid cloning issues
+    message.svnInfo = JSON.stringify(svnInfo.value)
+  }
+  window.api.send('task-start', message)
 }
 
 // 停止任务
@@ -47,13 +51,15 @@ const stopTask = () => {
   taskStatus.value = '已停止'
   
   // 发送停止任务的消息到主进程，包含自动上传信息
-  window.api.send('task-stop', { 
+  const message = { 
     name: taskName.value,
-    autoUpload: autoUpload.value,
-    svnInfo: autoUpload.value ? svnInfo.value : null
-  })
-  
-  appendOutput('任务已停止')
+    autoUpload: autoUpload.value
+  }
+  if (autoUpload.value) {
+    // Stringify SVN info to avoid cloning issues
+    message.svnInfo = JSON.stringify(svnInfo.value)
+  }
+  window.api.send('task-stop', message)
 }
 
 // 清空输出
@@ -79,7 +85,7 @@ const initTerminal = () => {
     cursorBlink: true,
     fontSize: 14,
     fontFamily: 'monospace',
-    scrollback: 1000,
+    scrollback: 1500,
     theme: {
       background: '#1e1e1e',
       foreground: '#f0f0f0'
@@ -222,29 +228,28 @@ const cancelSvnInfo = () => {
             :value="autoUpload"
             @change="toggleAutoUpload"
             size="medium"
-            
           >
             <template #label>
+              SVN
               <t-icon name="upload" />
-              自动上传
             </template>
           </t-switch>
           
-          <t-button theme="primary" :disabled="isRunning" @click="startTask">
+          <t-button theme="primary" :disabled="isRunning" size="small" @click="startTask">
             <template #icon>
-              <t-icon name="play" />
+              <t-icon name="play-circle" />
             </template>
             开始
           </t-button>
           
-          <t-button theme="danger" :disabled="!isRunning" @click="stopTask">
+          <t-button theme="danger" :disabled="!isRunning" size="small" @click="stopTask">
             <template #icon>
-              <t-icon name="stop" />
+              <t-icon name="stop-circle" />
             </template>
             停止
           </t-button>
           
-          <t-button theme="default" @click="clearOutput">
+          <t-button theme="default" @click="clearOutput" size="small">
             <template #icon>
               <t-icon name="clear" />
             </template>
@@ -336,7 +341,7 @@ const cancelSvnInfo = () => {
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e7e7e7;
-  height: 40px; /* 固定高度保证垂直居中 */
+  height: 20px; /* 固定高度保证垂直居中 */
 }
 
 .task-info {

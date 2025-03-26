@@ -1,8 +1,8 @@
 <script setup>
-import Terminal from './components/Terminal.vue'
-import TopNavBar from './components/TopNavBar.vue'
-import TaskExecutor from './components/TaskExecutor.vue'
-import LogViewer from './components/LogViewer.vue'
+import Terminal from '@renderer/components/Terminal/index.vue'
+import TopNavBar from '@renderer/components/TopNavBar/index.vue'
+import TaskExecutor from '@renderer/components/TaskExecutor/index.vue'
+import LogViewer from '@renderer/components/LogViewer/index.vue'
 </script>
 
 <template>

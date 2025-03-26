@@ -10,7 +10,7 @@ const loadLogList = async () => {
   try {
     isLoading.value = true
     // 通过IPC调用获取日志列表
-    const logs = await window.ipcRenderer.invoke('get-log-list')
+    const logs = await window.api.invoke('get-log-list')
     logList.value = logs
   } catch (error) {
     console.error('加载日志列表失败:', error)
@@ -21,12 +21,17 @@ const loadLogList = async () => {
 
 // 打开日志文件
 const openLogFile = (logPath) => {
-  window.ipcRenderer.invoke('open-log-file', logPath)
+  window.api.invoke('open-log-file', logPath)
 }
 
 // 刷新日志列表
 const refreshLogList = () => {
   loadLogList()
+}
+
+// 打开日志文件夹
+const openLogsDir = () => {
+  window.api.send('open-logs-dir')
 }
 
 // 组件挂载时加载日志列表
@@ -50,12 +55,12 @@ onMounted(() => {
     <div class="log-header">
       <div class="log-title">
         <t-space>
-          <t-tag theme="primary" size="medium">
+          <t-button theme="primary" size="small" @click="openLogsDir">
             <template #icon>
               <t-icon name="file-paste" />
             </template>
             日志列表
-          </t-tag>
+          </t-button>
         </t-space>
       </div>
       
@@ -110,27 +115,18 @@ onMounted(() => {
   border-bottom: 1px solid #e7e7e7;
 }
 
-.log-title {
-  display: flex;
-  align-items: center;
-}
-
-.log-controls {
+.log-title, .log-controls {
   display: flex;
   align-items: center;
 }
 
 .log-list {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  background-color: #ffffff;
+  background-color: #fff;
   border-radius: 3px;
   padding: 4px;
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -141,9 +137,9 @@ onMounted(() => {
   cursor: pointer;
   border-radius: 2px;
   transition: background-color 0.2s;
+  overflow: hidden;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .log-item:hover {
@@ -157,6 +153,5 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10px;
-  display: inline-block;
 }
 </style>
