@@ -78,12 +78,10 @@ onMounted(() => {
       <t-loading :loading="isLoading">
         <t-list v-if="logList.length > 0" size="small">
           <t-list-item v-for="log in logList" :key="log.path" @click="openLogFile(log.path)">
-            <template #content>
-              <div class="log-item">
-                <t-icon name="file-text" />
-                <span class="log-name">{{ log.name }}</span>
-              </div>
-            </template>
+            <div class="log-item">
+              <t-icon name="file" />
+              <span class="log-name">{{ log.name }}</span>
+            </div>
           </t-list-item>
         </t-list>
         

@@ -10,7 +10,7 @@ loop: 10
 cmd_timeout: 10
 
 cmd:
-  - "shutdown"
+  - "shutdown1"
   - "no shutdown"
 
 # 不期望回显
