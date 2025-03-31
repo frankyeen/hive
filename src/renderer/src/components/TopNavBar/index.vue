@@ -30,9 +30,9 @@ const openHelp = () => {
   <div class="top-nav-bar">
     <div class="nav-left">
       <t-space>
-        <CreateSession ref="createSessionRef" @click="openCreateSession" />
-        <TaskManager ref="taskManagerRef" @click="openTaskManager" />
-        <HelpDialog ref="helpDialogRef" @click="openHelp" />
+        <CreateSession />
+        <TaskManager />
+        <HelpDialog />
       </t-space>
     </div>
     <div class="nav-right">

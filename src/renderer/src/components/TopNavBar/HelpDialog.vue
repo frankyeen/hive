@@ -56,12 +56,6 @@ onMounted(() => {
     downloadTotal.value = progressData.total
   })
 })
-
-// 导出组件需要的方法和状态
-defineExpose({
-  toggleHelp,
-  helpVisible
-})
 </script>
 
 <template>

@@ -158,12 +158,6 @@ const deleteTask = async (name) => {
 const openConfigsDir = () => {
   window.api.send('open-config-dir')
 }
-
-// 导出组件需要的方法和状态
-defineExpose({
-  toggleTaskManager,
-  taskManagerVisible
-})
 </script>
 
 <template>
