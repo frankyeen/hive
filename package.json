@@ -30,6 +30,7 @@
     "tdesign-icons-vue-next": "^0.3.4",
     "tdesign-vue-next": "^1.11.4",
     "telnet-client": "^2.2.5",
+    "vue-router": "^4.5.0",
     "xterm": "^5.3.0",
     "yaml": "^2.7.0"
   },

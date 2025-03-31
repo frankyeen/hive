@@ -1,29 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 
 // 控制弹出框的显示状态
 const createSessionVisible = ref(false)
 
 // 连接参数
-const host = ref()
-const port = ref()
-const username = ref()
-const password = ref()
-
-// 在组件挂载时加载保存的连接参数
-onMounted(async () => {
-  try {
-    const savedParams = await window.api.invoke('get-connection-params')
-    if (savedParams) {
-      host.value = savedParams.host
-      port.value = savedParams.port
-      username.value = savedParams.username
-      password.value = savedParams.password
-    }
-  } catch (error) {
-    console.error('加载连接参数失败:', error)
-  }
-})
+const host = ref('192.168.5.58')
+const port = ref('23')
+const username = ref('admin')
+const password = ref('bnm789789')
 
 // 打开/关闭弹出框的方法
 const toggleCreateSession = () => {
@@ -31,23 +16,13 @@ const toggleCreateSession = () => {
 }
 
 // 连接方法
-const connect = async () => {
-  const connectionParams = {
+const connect = () => {
+  window.api.send('connect', {
     host: host.value,
     port: port.value,
     username: username.value,
     password: password.value
-  }
-  
-  // 保存连接参数到本地存储
-  try {
-    await window.api.invoke('save-connection-params', connectionParams)
-  } catch (error) {
-    console.error('保存连接参数失败:', error)
-  }
-  
-  // 发送连接请求到主进程
-  window.api.send('connect', connectionParams)
+  })
 
   // 添加URL参数，用于在StatusBar中获取当前连接的IP
   const url = new URL(window.location.href)

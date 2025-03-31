@@ -1,4 +1,4 @@
-import { app, dialog, BrowserWindow, ipcMain } from 'electron'
+import { app, dialog, BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 
 // 配置日志
@@ -84,17 +84,5 @@ export function setupAutoUpdater() {
     // setTimeout(() => {
     //   autoUpdater.checkForUpdates()
     // }, 3000)
-  })
-}
-
-/**
- * 注册自动更新相关的IPC事件处理程序
- */
-export function registerAutoUpdaterHandlers() {
-  /**
-   * 手动检查更新的IPC处理程序
-   */
-  ipcMain.on('check-for-updates', () => {
-    checkForUpdates()
   })
 }

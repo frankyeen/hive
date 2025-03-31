@@ -1,4 +1,4 @@
-import { app, ipcMain, shell } from 'electron'
+import { app } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { existsSync, mkdirSync } from 'fs'
@@ -63,23 +63,4 @@ export const ensureLogsDir = () => {
     mkdirSync(logsDirPath, { recursive: true })
   }
   return logsDirPath
-}
-
-/**
- * 注册配置相关的IPC事件处理程序
- */
-export function registerConfigHandlers() {
-  /**
-   * 打开配置目录
-   */
-  ipcMain.on('open-config-dir', () => {
-    shell.openPath(getConfigsDir())
-  })
-
-  /**
-   * 打开日志目录
-   */
-  ipcMain.on('open-logs-dir', () => {
-    shell.openPath(logsDir())
-  })
 }

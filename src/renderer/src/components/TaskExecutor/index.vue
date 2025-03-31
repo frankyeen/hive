@@ -13,10 +13,11 @@ const isRunning = ref(false)
 // 自动上传相关状态
 const autoUpload = ref(false)
 const svnDialogVisible = ref(false)
-const svnUrl = ref()
-const svnUsername = ref()
-const svnPassword = ref()
-
+const svnInfo = ref({
+  url: '',
+  username: '',
+  password: ''
+})
 
 // 终端相关变量
 const terminalElement = ref(null)
@@ -101,25 +102,12 @@ const initTerminal = () => {
 }
 
 // 监听任务状态变化
-onMounted(async () => {
+onMounted(() => {
   // 初始化终端
   initTerminal()
   
-  // 加载保存的SVN信息
-  try {
-    const savedSvnInfo = await window.api.invoke('get-svn-info')
-    if (savedSvnInfo) {
-      svnUrl.value = savedSvnInfo.url
-      svnUsername.value = savedSvnInfo.username
-      svnPassword.value = savedSvnInfo.password
-    }
-  } catch (error) {
-    console.error('加载SVN信息失败:', error)
-  }
-  
   // 处理窗口大小变化
   window.addEventListener('resize', handleResize)
-  
   // 监听任务输出
   window.api.on('task-output', (data) => {
     appendOutput(data)
@@ -188,24 +176,11 @@ const toggleAutoUpload = () => {
 }
 
 // 确认SVN信息
-const confirmSvnInfo = async () => {
+const confirmSvnInfo = () => {
   // 验证SVN信息
-  if (!svnUrl || !svnUsername || !svnPassword) {
+  if (!svnInfo.value.url || !svnInfo.value.username || !svnInfo.value.password) {
     // 如果信息不完整，显示错误提示
     return
-  }
-  
-  const svnParams = {
-    url: svnUrl.value,
-    username: svnUsername.value,
-    password: svnPassword.value
-  }
-
-  // 保存SVN信息到本地存储
-  try {
-    await window.api.invoke('save-svn-info', svnParams)
-  } catch (error) {
-    console.error('保存SVN信息失败:', error)
   }
   
   // 设置自动上传为开启状态
@@ -302,7 +277,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnUrl"
+            v-model="svnInfo.url"
             placeholder="请输入SVN仓库路径"
             style="max-width: 400px;"
           />
@@ -314,7 +289,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnUsername"
+            v-model="svnInfo.username"
             placeholder="请输入SVN用户名"
             style="max-width: 400px;"
           />
@@ -326,7 +301,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnPassword"
+            v-model="svnInfo.password"
             type="password"
             placeholder="请输入SVN密码"
             style="max-width: 400px;"
@@ -342,7 +317,7 @@ const cancelSvnInfo = () => {
   width: calc(100% - 16px);
   background-color: #f8f8f8;
   border-radius: 6px;
-  margin: 0 8px 8px 8px;
+  margin: 0px 8px 0px 8px;
   padding: 16px;
   display: flex;
   flex-direction: column;

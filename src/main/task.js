@@ -3,7 +3,6 @@ import { readFile } from 'fs/promises'
 import path from 'path'
 import pino from 'pino'
 import pinoPretty from 'pino-pretty'
-import { ipcMain } from 'electron'
 import { getConfigsDir, logsDir } from './config'
 import { getTelnetConnection } from './telnet'
 import { uploadLogToSvn } from './svn'
@@ -360,90 +359,4 @@ export async function openLogFile(filePath) {
     console.error('打开日志文件失败:', error)
     return { success: false, error: error.message }
   }
-}
-
-/**
- * 注册任务相关的IPC事件处理程序
- */
-export function registerTaskHandlers() {
-  /**
-   * 监听任务名称变更
-   */
-  ipcMain.on('task-name', (event, { name }) => {
-    const result = setTaskName(name)
-    event.reply('task-name', result)
-  })
-
-  /**
-   * 监听任务路径变更
-   */
-  ipcMain.on('task-path', (event, { path }) => {
-    const result = setTaskPath(path)
-    event.reply('task-path', result)
-  })
-
-  /**
-   * 监听任务开始
-   */
-  ipcMain.on('task-start', async (event, data) => {
-    await startTask(event, data)
-  })
-
-  /**
-   * 监听任务停止
-   */
-  ipcMain.on('task-stop', (event) => {
-    const result = stopTask()
-    event.reply('task-status', result)
-    event.reply('task-output', '任务已手动停止')
-    console.log('任务终止流程完成')
-  })
-
-  /**
-   * 刷新任务列表的IPC处理程序
-   */
-  ipcMain.on('refresh-task-list', async (event) => {
-    try {
-      const taskList = await getTaskList()
-      event.reply('task-list-refreshed', { success: true, tasks: taskList })
-    } catch (error) {
-      console.error('刷新任务列表失败:', error)
-      event.reply('task-list-refreshed', { success: false, error: error.message })
-    }
-  })
-
-  /**
-   * 获取任务列表
-   */
-  ipcMain.handle('get-task-list', async () => {
-    return await getTaskList()
-  })
-
-  /**
-   * 保存任务
-   */
-  ipcMain.handle('save-task', async (_, { name, content }) => {
-    return await saveTask(name, content)
-  })
-
-  /**
-   * 删除任务
-   */
-  ipcMain.handle('delete-task', async (_, name) => {
-    return await deleteTask(name)
-  })
-
-  /**
-   * 获取日志列表
-   */
-  ipcMain.handle('get-log-list', async () => {
-    return await getLogList()
-  })
-
-  /**
-   * 打开日志文件
-   */
-  ipcMain.handle('open-log-file', async (_, filePath) => {
-    return await openLogFile(filePath)
-  })
 }

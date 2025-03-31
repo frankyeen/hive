@@ -1,19 +1,19 @@
 <script setup>
-import Terminal from '@renderer/components/Terminal/index.vue'
-import TopNavBar from '@renderer/components/TopNavBar/index.vue'
-import TaskExecutor from '@renderer/components/TaskExecutor/index.vue'
-import LogViewer from '@renderer/components/LogViewer/index.vue'
+import SideNav from '@renderer/components/SideNav/index.vue'
 </script>
 
 <template>
   <div class="container">
-    <TopNavBar />
     <div class="main-content">
-      <div class="left-panel">
-        <Terminal />
-        <TaskExecutor />
+      <SideNav />
+      <div class="content-area">
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" v-if="$route.meta.keepAlive" />
+          </keep-alive>
+          <component :is="Component" v-if="!$route.meta.keepAlive" />
+        </router-view>
       </div>
-      <LogViewer />
     </div>
   </div>
 </template>
@@ -22,7 +22,7 @@ import LogViewer from '@renderer/components/LogViewer/index.vue'
 .container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 15px;
+  padding: 15px 0px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -36,10 +36,9 @@ import LogViewer from '@renderer/components/LogViewer/index.vue'
   overflow: hidden;
 }
 
-.left-panel {
+.content-area {
   flex: 1;
   display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 </style>
