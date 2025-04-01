@@ -34,7 +34,7 @@ export const getLogsDir = () => {
  * 确保配置文件夹存在
  */
 export const ensureConfigsDir = async () => {
-  const configsDir = path.join(app.getPath('userData'), 'logs')
+  const configsDir = getConfigsDir()
   if (!existsSync(configsDir)) {
     try {
       await mkdir(configsDir, { recursive: true })
