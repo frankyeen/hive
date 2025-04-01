@@ -1,5 +1,6 @@
 import { app, dialog, BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import path from 'path'
 
 // 配置日志
 autoUpdater.logger = require('electron-log')
@@ -7,6 +8,11 @@ autoUpdater.logger.transports.file.level = 'info'
 
 // 禁用自动下载
 autoUpdater.autoDownload = false
+
+// 确保更新在当前安装路径下进行
+autoUpdater.forceDevUpdateConfig = false
+autoUpdater.allowDowngrade = false
+autoUpdater.currentAppPath = app.getPath('exe')
 
 // 检查更新错误处理
 autoUpdater.on('error', (error) => {
@@ -60,19 +66,36 @@ autoUpdater.on('download-progress', (progressObj) => {
 
 // 更新下载完成
 autoUpdater.on('update-downloaded', () => {
+  // 记录当前安装路径
+  console.log(`当前应用路径: ${app.getPath('exe')}`)
+  autoUpdater.logger.info(`当前应用路径: ${app.getPath('exe')}`)
+  
   dialog
     .showMessageBox({
       title: '安装更新',
-      message: '更新下载完毕，应用将重启并安装'
+      message: '更新下载完毕，应用将重启并安装',
+      detail: '更新将在当前安装路径下进行'
     })
     .then(() => {
       // 退出并安装更新
-      autoUpdater.quitAndInstall()
+      autoUpdater.quitAndInstall(false, true) // 第二个参数为true表示强制重启应用
     })
 })
 
 // 导出检查更新函数
 export function checkForUpdates(customServerUrl = '') {
+  // 记录当前应用路径信息
+  const appPath = app.getPath('exe')
+  const appDir = path.dirname(appPath)
+  
+  console.log(`检查更新 - 当前应用路径: ${appPath}`)
+  console.log(`检查更新 - 当前应用目录: ${appDir}`)
+  autoUpdater.logger.info(`检查更新 - 当前应用路径: ${appPath}`)
+  autoUpdater.logger.info(`检查更新 - 当前应用目录: ${appDir}`)
+  
+  // 确保更新在当前安装路径下进行
+  autoUpdater.currentAppPath = appPath
+  
   // 如果提供了自定义服务器地址，则设置更新服务器URL
   if (customServerUrl && customServerUrl.trim() !== '') {
     // 使用自定义服务器URL
