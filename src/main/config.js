@@ -64,3 +64,24 @@ export const ensureLogsDir = () => {
   }
   return logsDirPath
 }
+
+/**
+ * 注册配置相关的IPC事件处理函数
+ */
+export function registerConfigHandlers() {
+  const { ipcMain, shell } = require('electron')
+  
+  /**
+   * 打开配置目录
+   */
+  ipcMain.on('open-config-dir', () => {
+    shell.openPath(getConfigsDir())
+  })
+
+  /**
+   * 打开日志目录
+   */
+  ipcMain.on('open-logs-dir', () => {
+    shell.openPath(logsDir())
+  })
+}

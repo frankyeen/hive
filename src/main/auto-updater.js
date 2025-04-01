@@ -86,3 +86,17 @@ export function setupAutoUpdater() {
     // }, 3000)
   })
 }
+
+/**
+ * 注册自动更新相关的IPC事件处理函数
+ */
+export function registerUpdateHandlers() {
+  const { ipcMain } = require('electron')
+  
+  /**
+   * 手动检查更新的IPC处理程序
+   */
+  ipcMain.on('check-for-updates', () => {
+    checkForUpdates()
+  })
+}
