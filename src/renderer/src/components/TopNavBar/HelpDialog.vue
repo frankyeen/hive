@@ -8,6 +8,7 @@ const helpVisible = ref(false)
 // 应用版本信息
 const appVersion = ref(pkg.version) // 从package.json中获取的版本号
 const isCheckingUpdate = ref(false) // 是否正在检查更新
+const customUpdateServer = ref('') // 自定义更新服务器地址
 
 // 更新下载进度相关
 const isDownloading = ref(false) // 是否正在下载更新
@@ -24,8 +25,8 @@ const toggleHelp = () => {
 // 检查更新方法
 const checkForUpdates = () => {
   isCheckingUpdate.value = true
-  // 调用预加载脚本中暴露的检查更新方法
-  window.api.send('check-for-updates')
+  // 调用预加载脚本中暴露的检查更新方法，传递自定义服务器地址
+  window.api.send('check-for-updates', customUpdateServer.value)
   // 设置一个定时器，3秒后重置检查状态
   setTimeout(() => {
     isCheckingUpdate.value = false
@@ -83,6 +84,14 @@ onMounted(() => {
           {{ isCheckingUpdate ? '检查中...' : '检查更新' }}
         </t-button>
       </div>
+      
+      <!-- 自定义更新服务器设置 -->
+      <div class="update-server-container">
+        <h3>更新服务器设置</h3>
+        <div class="update-server-input">
+          <t-input v-model="customUpdateServer" placeholder="请输入自定义更新服务器地址（留空使用默认地址）" />
+        </div>
+      </div>
 
       <!-- 更新下载进度显示区域 -->
       <div v-if="isDownloading" class="download-progress-container">
@@ -138,5 +147,16 @@ onMounted(() => {
   margin-top: 10px;
   font-size: 14px;
   color: #666;
+}
+
+.update-server-container {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+}
+
+.update-server-input {
+  margin-top: 10px;
 }
 </style>

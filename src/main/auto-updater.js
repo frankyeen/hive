@@ -72,7 +72,20 @@ autoUpdater.on('update-downloaded', () => {
 })
 
 // 导出检查更新函数
-export function checkForUpdates() {
+export function checkForUpdates(customServerUrl = '') {
+  // 如果提供了自定义服务器地址，则设置更新服务器URL
+  if (customServerUrl && customServerUrl.trim() !== '') {
+    // 使用自定义服务器URL
+    const urlOptions = {
+      provider: 'generic',
+      url: customServerUrl
+    }
+    autoUpdater.setFeedURL(urlOptions)
+  } else {
+    // 使用默认配置（从electron-builder.yml读取）
+    // electron-updater会自动使用默认配置，无需显式重置
+  }
+  
   autoUpdater.checkForUpdates()
 }
 
@@ -95,8 +108,10 @@ export function registerUpdateHandlers() {
   
   /**
    * 手动检查更新的IPC处理程序
+   * @param {Event} event - 事件对象
+   * @param {string} customServerUrl - 自定义更新服务器地址
    */
-  ipcMain.on('check-for-updates', () => {
-    checkForUpdates()
+  ipcMain.on('check-for-updates', (event, customServerUrl) => {
+    checkForUpdates(customServerUrl)
   })
 }
