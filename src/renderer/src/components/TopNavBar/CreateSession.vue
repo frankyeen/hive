@@ -1,14 +1,21 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { Conf } from 'electron-conf/renderer'
 
 // 控制弹出框的显示状态
 const createSessionVisible = ref(false)
 
 // 连接参数
-const host = ref('192.168.5.58')
-const port = ref('23')
-const username = ref('admin')
-const password = ref('bnm789789')
+const sessionInfo = ref({
+  host: '',
+  port: '',
+  username: '',
+  password: ''
+})
+const host = ref()
+const port = ref()
+const username = ref()
+const password = ref()
 
 // 打开/关闭弹出框的方法
 const toggleCreateSession = () => {
@@ -16,7 +23,15 @@ const toggleCreateSession = () => {
 }
 
 // 连接方法
-const connect = () => {
+const connect = async () => {
+  // 引入electron-conf
+  const conf = new Conf()
+
+  await conf.set('session.ip', host.value)
+  await conf.set('session.port', port.value)
+  await conf.set('session.username', username.value)
+  await conf.set('session.password', password.value)
+
   window.api.send('connect', {
     host: host.value,
     port: port.value,
@@ -31,6 +46,18 @@ const connect = () => {
 
   createSessionVisible.value = false
 }
+
+onMounted(async() => {
+  // 引入electron-conf
+  const conf = new Conf()
+
+  // 获取URL参数，用于在StatusBar中获取当前连接的IP
+  host.value = await conf.get('session.ip') || "0.0.0.0"
+  port.value = await conf.get('session.port') || "23"
+  username.value = await conf.get('session.username') || ""
+  password.value = await conf.get('session.password') || ""
+})
+
 </script>
 
 <template>

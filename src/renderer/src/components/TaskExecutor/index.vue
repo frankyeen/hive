@@ -13,11 +13,9 @@ const isRunning = ref(false)
 // 自动上传相关状态
 const autoUpload = ref(false)
 const svnDialogVisible = ref(false)
-const svnInfo = ref({
-  url: '',
-  username: '',
-  password: ''
-})
+const url = ref('')
+const username = ref('')
+const password = ref('')
 
 // 终端相关变量
 const terminalElement = ref(null)
@@ -33,12 +31,12 @@ const startTask = () => {
   
   // 发送开始任务的消息到主进程，包含自动上传信息
   const message = { 
-  name: taskName.value,
-  autoUpload: autoUpload.value
+    name: taskName.value,
+    autoUpload: autoUpload.value
   }
   if (autoUpload.value) {
     // Stringify SVN info to avoid cloning issues
-    message.svnInfo = JSON.stringify(svnInfo.value)
+    message.svnInfo = JSON.stringify({url: url.value, username: username.value, password: password.value})
   }
   window.api.send('task-start', message)
 }
@@ -57,7 +55,7 @@ const stopTask = () => {
   }
   if (autoUpload.value) {
     // Stringify SVN info to avoid cloning issues
-    message.svnInfo = JSON.stringify(svnInfo.value)
+    message.svnInfo = JSON.stringify({url: url.value, username: username.value, password: password.value})
   }
   window.api.send('task-stop', message)
 }
@@ -178,7 +176,7 @@ const toggleAutoUpload = () => {
 // 确认SVN信息
 const confirmSvnInfo = () => {
   // 验证SVN信息
-  if (!svnInfo.value.url || !svnInfo.value.username || !svnInfo.value.password) {
+  if (!url.value || !username.value || !password.value) {
     // 如果信息不完整，显示错误提示
     return
   }
@@ -277,7 +275,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnInfo.url"
+            v-model="url"
             placeholder="请输入SVN仓库路径"
             style="max-width: 400px;"
           />
@@ -289,7 +287,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnInfo.username"
+            v-model="username"
             placeholder="请输入SVN用户名"
             style="max-width: 400px;"
           />
@@ -301,7 +299,7 @@ const cancelSvnInfo = () => {
           class="form-item"
         >
           <t-input
-            v-model="svnInfo.password"
+            v-model="password"
             type="password"
             placeholder="请输入SVN密码"
             style="max-width: 400px;"

@@ -5,9 +5,7 @@ import { createWindow, setupWindowShortcuts } from './window'
 import { ensureConfigsDir, ensureLogsDir, registerConfigHandlers } from './config'
 import { registerTelnetHandlers } from './telnet'
 import { registerTaskHandlers } from './task'
-
-// 确保日志目录存在
-ensureLogsDir()
+import { Conf, useConf } from 'electron-conf/main'
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.electron')
@@ -15,7 +13,8 @@ app.whenReady().then(async () => {
   // 设置窗口快捷键
   setupWindowShortcuts(app)
 
-  // 确保配置目录存在
+  // 确保配置目录、日志目录存在
+  await ensureLogsDir()
   await ensureConfigsDir()
 
   // 创建主窗口
@@ -29,6 +28,11 @@ app.whenReady().then(async () => {
   registerTaskHandlers()
   registerConfigHandlers()
   registerUpdateHandlers()
+
+  // conf
+  const conf = new Conf()
+  conf.registerRendererListener()
+  useConf()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

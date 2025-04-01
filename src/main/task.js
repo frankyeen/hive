@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises'
 import path from 'path'
 import pino from 'pino'
 import pinoPretty from 'pino-pretty'
-import { getConfigsDir, logsDir } from './config'
+import { getConfigsDir, getLogsDir } from './config'
 import { getTelnetConnection } from './telnet'
 import { uploadLogToSvn } from './svn'
 
@@ -92,7 +92,7 @@ export async function startTask(event, data) {
     const now = new Date()
     const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`
     const logFileName = `${currentTaskName}-${timestamp}.log`
-    logFilePath = path.join(logsDir(), logFileName)
+    logFilePath = path.join(getLogsDir(), logFileName)
     
     // 创建pino日志记录器，使用pino-pretty实现流式输出
     const prettyOptions = {
@@ -309,7 +309,7 @@ export async function deleteTask(name) {
  */
 export async function getLogList() {
   const { promises: fsPromises } = require('fs')
-  const logsDirPath = logsDir()
+  const logsDirPath = getLogsDir()
   
   try {
     const files = await fsPromises.readdir(logsDirPath)

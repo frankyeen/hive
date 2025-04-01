@@ -20,7 +20,7 @@ export const getConfigsDir = () => {
 /**
  * 获取日志文件夹路径
  */
-export const logsDir = () => {
+export const getLogsDir = () => {
   if (is.dev) {
     // 在开发模式下使用自定义目录，生产环境使用userData目录
     return '/Users/lvyilin/hive/logs'
@@ -34,19 +34,11 @@ export const logsDir = () => {
  * 确保配置文件夹存在
  */
 export const ensureConfigsDir = async () => {
-  const configsDir = getConfigsDir()
+  const configsDir = path.join(app.getPath('userData'), 'logs')
   if (!existsSync(configsDir)) {
     try {
       await mkdir(configsDir, { recursive: true })
       console.log(`创建配置目录: ${configsDir}`)
-      
-      // 如果是新创建的目录，复制默认配置文件
-      const defaultConfigPath = path.join(app.getAppPath(), '../configs/demo.yaml')
-      if (existsSync(defaultConfigPath)) {
-        const fs = require('fs')
-        fs.copyFileSync(defaultConfigPath, path.join(configsDir, 'demo.yaml'))
-        console.log('已复制默认配置文件')
-      }
     } catch (error) {
       console.error('创建配置目录失败:', error)
     }
@@ -57,10 +49,15 @@ export const ensureConfigsDir = async () => {
 /**
  * 确保日志目录存在
  */
-export const ensureLogsDir = () => {
-  const logsDirPath = logsDir()
+export const ensureLogsDir = async () => {
+  const logsDirPath = getLogsDir()
   if (!existsSync(logsDirPath)) {
-    mkdirSync(logsDirPath, { recursive: true })
+    try {
+      await mkdir(logsDirPath, { recursive: true })
+      console.log(`创建日志目录: ${logsDirPath}`)
+    } catch (error) {
+      console.error('创建日志目录失败:', error)
+    }
   }
   return logsDirPath
 }
@@ -82,6 +79,6 @@ export function registerConfigHandlers() {
    * 打开日志目录
    */
   ipcMain.on('open-logs-dir', () => {
-    shell.openPath(logsDir())
+    shell.openPath(getLogsDir())
   })
 }
