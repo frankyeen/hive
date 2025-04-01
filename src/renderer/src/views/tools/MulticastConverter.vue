@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftIcon } from 'tdesign-icons-vue-next'
 
@@ -65,19 +65,6 @@ const convertToMac = () => {
   macAddress.value = `01:00:5E:${lowBitOfSecond.toString(16).padStart(2, '0')}:${thirdOctet.toString(16).padStart(2, '0')}:${fourthOctet.toString(16).padStart(2, '0')}`
 }
 
-// 复制到剪贴板
-const copyToClipboard = () => {
-  if (!macAddress.value) return
-  navigator.clipboard.writeText(macAddress.value)
-    .then(() => {
-      // 复制成功提示
-      alert('已复制到剪贴板')
-    })
-    .catch(err => {
-      console.error('复制失败:', err)
-    })
-}
-
 // 清空输入和结果
 const clearAll = () => {
   ipv4Address.value = ''
@@ -124,7 +111,6 @@ const clearAll = () => {
                 readonly
                 class="mac-result"
               />
-              <t-button theme="default" @click="copyToClipboard" class="copy-button">复制</t-button>
             </div>
             
             <div class="explanation">

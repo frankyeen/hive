@@ -48,19 +48,6 @@ const generateRandomString = () => {
   generatedString.value = result
 }
 
-// 复制到剪贴板
-const copyToClipboard = () => {
-  if (!generatedString.value) return
-  navigator.clipboard.writeText(generatedString.value)
-    .then(() => {
-      // 复制成功提示
-      alert('已复制到剪贴板')
-    })
-    .catch(err => {
-      console.error('复制失败:', err)
-    })
-}
-
 // 清空生成的字符串
 const clearGeneratedString = () => {
   generatedString.value = ''
@@ -109,7 +96,6 @@ const clearGeneratedString = () => {
               <t-space>
                 <t-button theme="primary" @click="generateRandomString">生成</t-button>
                 <t-button theme="default" @click="clearGeneratedString">清空</t-button>
-                <t-button theme="default" @click="copyToClipboard" :disabled="!generatedString">复制</t-button>
               </t-space>
             </div>
           </t-card>
