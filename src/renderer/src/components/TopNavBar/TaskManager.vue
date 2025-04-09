@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import YAML from 'yaml'
 
 // 控制弹出框的显示状态
 const taskManagerVisible = ref(false)
@@ -91,29 +92,30 @@ const loadTaskList = async () => {
 // 创建新任务
 const createTask = async (formData) => {
   try {
-    // 将多行文本转换为数组
-    const cmdArray = formData.cmd.split('\n').filter(line => line.trim() !== '').map(line => `"${line.trim()}"`)
-    
-    // 构建YAML内容
-    let yamlContent = ''
+    // 构建任务配置对象
+    const taskConfig = {
+      loop: formData.loop,
+      cmd_timeout: formData.cmd_timeout,
+      cmd: formData.cmd.split('\n')
+        .filter(line => line.trim() !== '')
+        .map(line => line.trim()),
+      unexpected: ["%Invalid", "%Error", "%Wrong", "%Refuse", "%Conflict", "%Failed"]
+    }
     
     // 只有当setup不为空时才添加setup字段
     const setupArray = formData.setup.split('\n').filter(line => line.trim() !== '')
     if (setupArray.length > 0) {
-      const formattedSetup = setupArray.map(line => `"${line.trim()}"`)
-      yamlContent += `setup:\n  - ${formattedSetup.join('\n  - ')}\n\n`
+      taskConfig.setup = setupArray.map(line => line.trim())
     }
     
     // 只有当teardown不为空时才添加teardown字段
     const teardownArray = formData.teardown.split('\n').filter(line => line.trim() !== '')
     if (teardownArray.length > 0) {
-      const formattedTeardown = teardownArray.map(line => `"${line.trim()}"`)
-      yamlContent += `teardown:\n  - ${formattedTeardown.join('\n  - ')}\n\n`
+      taskConfig.teardown = teardownArray.map(line => line.trim())
     }
     
-    // 添加必需的字段
-    let unexpect = [`"%Invalid"`, `"%Error"`, `"%Wrong"`, `"%Refuse"`, `"%Conflict"`, `"%Failed"`]
-    yamlContent += `loop: ${formData.loop}\n\ncmd_timeout: ${formData.cmd_timeout}\n\ncmd:\n  - ${cmdArray.join('\n  - ')}\n\nunexpected:\n  - ${unexpect.join('\n  - ')}\n`
+    // 使用YAML库将对象转换为YAML格式的字符串
+    const yamlContent = YAML.stringify(taskConfig)
     
     // 发送到主进程保存文件
     await window.api.invoke('save-task', {
@@ -151,6 +153,39 @@ const deleteTask = async (name) => {
     loadTaskList()
   } catch (error) {
     console.error('删除任务失败:', error)
+  }
+}
+
+// 修改任务方法
+const editTask = async (name) => {
+  try {
+    // 获取任务内容
+    const result = await window.api.invoke('get-task-content', name)
+    
+    if (result.success) {
+      // 解析YAML内容
+      const taskConfig = YAML.parse(result.content)
+      
+      // 填充表单数据
+      taskForm.value = {
+        name: name,
+        loop: taskConfig.loop || 10,
+        cmd_timeout: taskConfig.cmd_timeout || 10,
+        setup: taskConfig.setup ? taskConfig.setup.join('\n') : '',
+        cmd: taskConfig.cmd ? taskConfig.cmd.join('\n') : '',
+        teardown: taskConfig.teardown ? taskConfig.teardown.join('\n') : ''
+      }
+      
+      // 重置步骤到第一步
+      currentStep.value = 0
+      
+      // 打开创建任务对话框
+      createTaskVisible.value = true
+    } else {
+      console.error('获取任务内容失败:', result.error)
+    }
+  } catch (error) {
+    console.error('修改任务失败:', error)
   }
 }
 
@@ -206,7 +241,7 @@ const openConfigsDir = () => {
         :data="taskList"
         :columns="[
           { colKey: 'name', title: '任务名称', width: '200' },
-          { colKey: 'operation', title: '操作', width: '35' }
+          { colKey: 'operation', title: '操作', width: '52' }
         ]"
         row-key="name"
         size="medium"
@@ -218,6 +253,9 @@ const openConfigsDir = () => {
           <t-space>
             <t-button theme="primary" size="small" @click="selectAndExecuteTask(row.name)">
               选中
+            </t-button>
+            <t-button theme="warning" size="small" @click="editTask(row.name)">
+              修改
             </t-button>
             <t-button theme="danger" size="small" @click="deleteTask(row.name)">
               删除

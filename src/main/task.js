@@ -323,6 +323,23 @@ export async function deleteTask(name) {
 }
 
 /**
+ * 获取任务内容
+ */
+export async function getTaskContent(name) {
+  const { promises: fsPromises } = require('fs')
+  const configsDir = getConfigsDir()
+  const filePath = path.join(configsDir, `${name}.yaml`)
+  
+  try {
+    const content = await fsPromises.readFile(filePath, 'utf8')
+    return { success: true, content }
+  } catch (error) {
+    console.error('读取任务内容失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * 获取日志列表
  */
 export async function getLogList() {
@@ -455,6 +472,13 @@ export function registerTaskHandlers() {
    */
   ipcMain.handle('delete-task', async (_, name) => {
     return await deleteTask(name)
+  })
+
+  /**
+   * 获取任务内容
+   */
+  ipcMain.handle('get-task-content', async (_, name) => {
+    return await getTaskContent(name)
   })
 
   /**
