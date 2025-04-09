@@ -1,6 +1,6 @@
 {
   "name": "hive",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "An Electron application with Vue",
   "main": "./out/main/index.js",
   "author": "example.com",

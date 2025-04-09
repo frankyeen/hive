@@ -84,13 +84,15 @@ const clearGeneratedString = () => {
         
         <div class="result-section">
           <t-card title="生成结果" class="result-card">
-            <t-textarea
-              v-model="generatedString"
-              readonly
-              placeholder="点击生成按钮创建随机字符串"
-              class="result-input"
-              :autosize="{ minRows: 5, maxRows: 10 }"
-            />
+            <div class="textarea-container">
+              <t-textarea
+                v-model="generatedString"
+                placeholder="点击生成按钮创建随机字符串"
+                class="result-input"
+                :autosize="{ minRows: 5, maxRows: 10 }"
+              />
+              <div v-if="generatedString" class="char-counter">{{ generatedString.length }}</div>
+            </div>
             
             <div class="action-section">
               <t-space>
@@ -185,12 +187,29 @@ const clearGeneratedString = () => {
   margin-top: 0;
 }
 
+.textarea-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
 .result-input {
   width: 100%;
   font-family: monospace;
-  margin-bottom: 16px;
   font-size: 16px;
   min-height: 120px;
+}
+
+.char-counter {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
 }
 
 .action-section {

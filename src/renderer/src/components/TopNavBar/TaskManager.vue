@@ -176,7 +176,7 @@ const openConfigsDir = () => {
     :on-close="toggleTaskManager"
     :on-cancel="toggleTaskManager"
     :footer="false"
-    width="680px"
+    width="1000px"
   >
     <div class="task-manager-container">
       <div class="task-manager-header">
@@ -206,7 +206,7 @@ const openConfigsDir = () => {
         :data="taskList"
         :columns="[
           { colKey: 'name', title: '任务名称', width: '200' },
-          { colKey: 'operation', title: '操作', width: '60' }
+          { colKey: 'operation', title: '操作', width: '35' }
         ]"
         row-key="name"
         size="medium"

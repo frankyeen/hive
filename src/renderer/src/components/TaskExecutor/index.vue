@@ -17,6 +17,9 @@ const url = ref('')
 const username = ref('')
 const password = ref('')
 
+// 状态记录开关
+const recordStatus = ref(false)
+
 // 终端相关变量
 const terminalElement = ref(null)
 let terminal = null
@@ -29,10 +32,11 @@ const startTask = () => {
   isRunning.value = true
   taskStatus.value = '执行中'
   
-  // 发送开始任务的消息到主进程，包含自动上传信息
+  // 发送开始任务的消息到主进程，包含自动上传信息和状态记录标志
   const message = { 
     name: taskName.value,
-    autoUpload: autoUpload.value
+    autoUpload: autoUpload.value,
+    recordStatus: recordStatus.value
   }
   if (autoUpload.value) {
     // Stringify SVN info to avoid cloning issues
@@ -48,10 +52,11 @@ const stopTask = () => {
   isRunning.value = false
   taskStatus.value = '已停止'
   
-  // 发送停止任务的消息到主进程，包含自动上传信息
+  // 发送停止任务的消息到主进程，包含自动上传信息和状态记录标志
   const message = { 
     name: taskName.value,
-    autoUpload: autoUpload.value
+    autoUpload: autoUpload.value,
+    recordStatus: recordStatus.value
   }
   if (autoUpload.value) {
     // Stringify SVN info to avoid cloning issues
@@ -222,6 +227,16 @@ const cancelSvnInfo = () => {
       
       <div class="task-controls">
         <t-space>
+          <t-switch
+            v-model="recordStatus"
+            size="medium"
+          >
+            <template #label>
+              状态记录
+              <t-icon name="file-paste" />
+            </template>
+          </t-switch>
+          
           <t-switch
             :value="autoUpload"
             @change="toggleAutoUpload"

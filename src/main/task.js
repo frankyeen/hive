@@ -6,11 +6,13 @@ import pinoPretty from 'pino-pretty'
 import { getConfigsDir, getLogsDir } from './config'
 import { getTelnetConnection } from './telnet'
 import { uploadLogToSvn } from './svn'
+import { exec } from 'child_process'
 
 // 任务相关变量
 let currentTaskName = 'demo'
 let currentTaskPath = ''
 let autoUploadEnabled = false
+let recordStatusEnabled = false
 let svnInfo = null
 let abortController = null
 
@@ -33,7 +35,7 @@ export function setTaskPath(taskPath) {
 /**
  * 执行命令并记录日志的辅助函数
  */
-async function executeCommand(command, logger, event) {
+async function executeCommand(command, logger, event, timeout) {
   const connection = getTelnetConnection()
   if (!connection) {
     throw new Error('未连接到设备')
@@ -64,7 +66,7 @@ async function executeCommand(command, logger, event) {
   
   // 正常执行命令
   logger.info(`执行命令: ${command}`)
-  const response = await connection.exec(command)
+  const response = await connection.exec(command, {execTimeout: timeout * 1000})
   logger.info(`命令输出: \n${response.replace(/\r?\n/g, '\n')}`)
   event.reply('data-receive', command + '\r\n' + response)
   return response
@@ -74,9 +76,10 @@ async function executeCommand(command, logger, event) {
  * 开始执行任务
  */
 export async function startTask(event, data) {
-  // 保存自动上传设置
+  // 保存自动上传设置和状态记录设置
   if (data && typeof data === 'object') {
     autoUploadEnabled = data.autoUpload || false
+    recordStatusEnabled = data.recordStatus || false
     svnInfo = data.svnInfo ? JSON.parse(data.svnInfo) : null
   }
   let stream = null
@@ -115,16 +118,24 @@ export async function startTask(event, data) {
     event.reply('task-output', startMessage)
     event.reply('task-status', { status: '执行中' })
     
+    // 读取任务配置文件
     const fileContent = await readFile(filePath, 'utf8')
     const data = YAML.parse(fileContent)
     logger.info(`任务配置: \n${JSON.stringify(data, null, 2)}`)
+    
+    // 如果启用了状态记录，记录任务开始状态
+    if (recordStatusEnabled) {
+      await executeCommand('show version', logger, event, data.cmd_timeout)
+      await executeCommand('show cpu-usage', logger, event, data.cmd_timeout)
+      await executeCommand('show memory', logger, event, data.cmd_timeout)
+    }
     
     // 执行前置命令
     if (data.setup && Array.isArray(data.setup) && data.setup.length > 0) {
       logger.info('开始执行前置命令')
       event.reply('task-output', '开始执行前置命令')
       for (const eachCmd of data.setup) {
-        await executeCommand(eachCmd, logger, event)
+        await executeCommand(eachCmd, logger, event, data.cmd_timeout)
       }
     }
     
@@ -140,7 +151,7 @@ export async function startTask(event, data) {
       
       if (data.cmd && Array.isArray(data.cmd)) {
         for (const eachCmd of data.cmd) {
-          const response = await executeCommand(eachCmd, logger, event)
+          const response = await executeCommand(eachCmd, logger, event, data.cmd_timeout)
           
           if (response == 'response not received') {
             const errorMessage = `检测到意外情况: response not received`
@@ -196,7 +207,7 @@ export async function startTask(event, data) {
       logger.info('开始执行后置命令')
       event.reply('task-output', '开始执行后置命令')
       for (const eachCmd of data.teardown) {
-        await executeCommand(eachCmd, logger, event)
+        await executeCommand(eachCmd, logger, event, data.cmd_timeout)
       }
     }
 
@@ -205,6 +216,13 @@ export async function startTask(event, data) {
     event.reply('task-status', { status: '已完成' })
     event.reply('task-output', completeMessage)
     
+    // 如果启用了状态记录，记录任务完成状态
+    if (recordStatusEnabled) {
+      await executeCommand('show version', logger, event, data.cmd_timeout)
+      await executeCommand('show cpu-usage', logger, event, data.cmd_timeout)
+      await executeCommand('show memory', logger, event, data.cmd_timeout)
+    }
+
     // 如果启用了自动上传，执行SVN上传
     if (autoUploadEnabled && svnInfo && logFilePath) {
       try {
@@ -393,7 +411,12 @@ export function registerTaskHandlers() {
   /**
    * 监听任务停止
    */
-  ipcMain.on('task-stop', (event) => {
+  ipcMain.on('task-stop', (event, data) => {
+    // 获取状态记录设置
+    if (data && typeof data === 'object') {
+      recordStatusEnabled = data.recordStatus || false;
+    }
+    
     const result = stopTask()
     event.reply('task-status', result)
     event.reply('task-output', '任务已手动停止')

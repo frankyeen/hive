@@ -20,7 +20,7 @@ import SideNav from '@renderer/components/SideNav/index.vue'
 
 <style scoped>
 .container {
-  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 15px 0px;
   height: 100vh;
